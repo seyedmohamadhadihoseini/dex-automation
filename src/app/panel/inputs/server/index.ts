@@ -17,7 +17,7 @@ export async function updateConfiguration(formData: FormData) {
         walletPrivateKey: formData.get("walletPrivateKey") as string
     }
 
-    const response = await fetch("http://localhost:3001/api/trading/inputs", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_HTTP_URL}/trading/inputs`, {
         method: "PUT", body: JSON.stringify(data), headers: {
             'Content-Type': `application/json`,
             'Authorization': `Bearer ${await GetTokenValue()}`
@@ -31,7 +31,7 @@ export async function updateConfiguration(formData: FormData) {
     }
 }
 export async function ReadConfiguration() {
-    const response = await fetch("http://localhost:3001/api/trading/inputs", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_HTTP_URL}/trading/inputs`, {
         method: "GET", headers: {
             'Authorization': `Bearer ${await GetTokenValue()}`
         }

@@ -8,7 +8,7 @@ export default async function LoginCheck(formData: FormData) {
     const loginData = {
         username, password
     }
-    const response = await fetch("http://localhost:3001/api/auth/login", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_HTTP_URL}/auth/login`, {
         method: "POST", body: JSON.stringify(loginData), headers: {
             'Content-Type': `application/json`
         }
