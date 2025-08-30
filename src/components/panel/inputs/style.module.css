@@ -1,0 +1,51 @@
+.container{
+    width: 95%;
+}
+.container h1{
+    font-size: 35px;
+    margin: 10px;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+.rowall{
+    width: 100%;
+    grid-template-columns: 1fr;
+}
+.rowall input{
+    width: 100%;
+}
+.row .element{
+    margin: 10px;
+}
+.element label{
+    display: block;
+    font-size: small;
+}
+.element input{
+    border: 1px solid black;
+    padding: 8px;
+    border-radius: 8px;
+    width: 100%;    
+    direction: rtl;
+}
+
+
+
+
+.container button{
+    padding: 15px;
+    background-color: blue;
+    border-radius: 8px;
+    color: black;
+    margin: 10px;
+    width: 100%;
+    cursor: pointer;
+}
+.element input[type="checkbox"]{
+    padding: 0;
+    width: fit-content;
+    margin: 5px;
+}

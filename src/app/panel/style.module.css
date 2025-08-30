@@ -1,0 +1,32 @@
+.container{
+    display: grid;
+    grid-template-columns: 1fr 5fr;
+    margin: 30px;
+}
+
+.container .sidelist li{
+    background-color: blue;
+    padding: 8px;
+    border-radius: 8px;
+    margin: 5px;
+    cursor: pointer;   
+    display: flex;
+    align-items: center;
+}
+.container .sidelist li span{
+    margin-left: 10px;
+}
+.active {
+    background-color: rgb(94, 231, 252) !important;
+    
+}
+.child{
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+@media only screen and (max-width: 800) {
+  .container{
+    grid-template-columns: 1fr;
+  }
+}

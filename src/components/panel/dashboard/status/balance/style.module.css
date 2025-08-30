@@ -1,0 +1,30 @@
+
+.container{
+    display: flex;
+    justify-content: center;
+    border: 1px solid gray;
+    border-radius: 10px;
+    padding: 20px;
+
+}
+.logo {
+    display: flex;
+    justify-content: left;
+}
+.logo img{
+    width: 120px;
+    height: auto;
+    
+}
+.container .main h2{
+    width: max-content;
+    font-size: 15px;
+}
+.container .main span{
+    color: gray;
+    font-size: 13px;
+}
+.main p{
+    font-size: 25px;
+    text-align: center;
+}

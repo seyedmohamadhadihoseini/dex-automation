@@ -1,0 +1,35 @@
+.container {
+    display: block;
+}
+.status-container{
+    display: flex;
+    justify-content: right;
+    align-items: center;
+}
+.status {
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+}
+
+.red {
+    background-color: red;
+}
+
+.green {
+    background-color: green;
+}
+.main{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.main h2 {
+    font-size: 22px;
+}
+.description p {
+    color: gray;
+    font-size: 12px;
+    text-align: center;
+}

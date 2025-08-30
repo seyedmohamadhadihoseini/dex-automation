@@ -1,0 +1,17 @@
+
+.vertical_mode{
+    writing-mode: vertical-lr;
+    transform: rotate(180deg);
+    
+}
+.button-container{
+    display: flex;
+    justify-content: center;
+}
+.button{
+    padding: 6px;
+    text-align: center;
+    margin: 0 auto;
+    border-radius: 8px;
+    cursor: pointer;
+}

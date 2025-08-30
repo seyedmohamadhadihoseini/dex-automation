@@ -1,0 +1,13 @@
+.container{
+    display: flex;
+    width: 100%;
+}
+.controller{
+    width: 100%;
+}
+.row{
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 20px;   
+    width: 100%;
+}
