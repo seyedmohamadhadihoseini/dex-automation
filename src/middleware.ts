@@ -5,14 +5,7 @@ export default async function middleware(request:NextRequest){
     const { pathname } = request.nextUrl;
     const isForLogin = pathname.startsWith("/signin");
     const isForPanel = pathname.startsWith("/panel");
-    const isForHome = pathname.startsWith("/");
-    if(isForHome){
-        if(await IsSessionExist()){
-            return NextResponse.redirect(new URL("/panel/dashboard", request.url));
-        }else{
-            return NextResponse.redirect(new URL("/signin", request.url));
-        }
-    }
+  
     if(isForLogin){
         if(await IsSessionExist()){
             return NextResponse.redirect(new URL("/panel/dashboard", request.url));
