@@ -163,7 +163,7 @@ export class UniswapService {
 
     const wallet = this.blockchainService.getWallet();
 
-    const provider = this.blockchainService.getWebSocketProvider();
+    const provider = this.blockchainService.getProvider();
 
     const routerContract = new ethers.Contract(this.UNISWAP_V2_ROUTER, this.routerABI, wallet);
 
