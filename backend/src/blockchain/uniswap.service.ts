@@ -7,7 +7,7 @@ import { Token, TokenPair, TradeResult } from '../interfaces/token.interface';
 @Injectable()
 export class UniswapService {
   private readonly logger = new Logger(UniswapService.name);
-  
+
   // Uniswap V2 Factory ABI (minimal)
   private readonly factoryABI = [
     'event PairCreated(address indexed token0, address indexed token1, address pair, uint)',
@@ -45,7 +45,7 @@ export class UniswapService {
   constructor(
     private blockchainService: BlockchainService,
     private configService: AppConfigService,
-  ) {}
+  ) { }
 
   async listenForNewPairs(callback: (token: Token) => void) {
     try {
@@ -61,11 +61,11 @@ export class UniswapService {
       factoryContract.on('PairCreated', async (token0, token1, pair, allPairsLength) => {
         try {
           this.logger.log(`New pair created: ${token0}/${token1} at ${pair}`);
-          
+
           // Check if one of the tokens is WETH
           const wethAddress = this.configService.wethAddress;
           let tokenAddress: string;
-          
+
           if (token0.toLowerCase() === wethAddress.toLowerCase()) {
             tokenAddress = token1;
           } else if (token1.toLowerCase() === wethAddress.toLowerCase()) {
@@ -94,10 +94,10 @@ export class UniswapService {
   async getTokenInfo(tokenAddress: string, pairAddress: string): Promise<Token | null> {
     try {
       const provider = this.blockchainService.getHttpProvider();
-      
+
       // Get token contract
       const tokenContract = new ethers.Contract(tokenAddress, this.erc20ABI, provider);
-      
+
       // Get pair contract
       const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
 
@@ -130,7 +130,9 @@ export class UniswapService {
       const liquidityETH = ethers.formatEther(wethReserve);
 
       // Calculate initial price (WETH per token)
-      const price = wethReserve * BigInt(10 ** decimals) / tokenReserve;
+      // Calculate initial price (WETH per token)
+      const decimalsNumber = Number(decimals);
+      const price = (wethReserve * BigInt(10 ** decimalsNumber)) / tokenReserve;
       const buyPrice = ethers.formatEther(price);
 
       return {
@@ -202,7 +204,7 @@ export class UniswapService {
       // First approve the router to spend tokens
       const decimals = await tokenContract.decimals();
       const amountIn = ethers.parseUnits(amount, decimals);
-      
+
       const approveTx = await tokenContract.approve(this.UNISWAP_V2_ROUTER, amountIn);
       await approveTx.wait();
 
@@ -274,7 +276,7 @@ export class UniswapService {
     try {
       // This is a simplified test - in production, you might want to use a more sophisticated approach
       // like calling static functions or using a fork of the mainnet for testing
-      
+
       const buyResult = await this.buyToken(tokenAddress, testAmountETH);
       if (!buyResult.success) {
         return { canSell: false, buyCommission: 100, sellCommission: 100 };
@@ -282,7 +284,7 @@ export class UniswapService {
 
       // Get token balance
       const tokenBalance = await this.blockchainService.getTokenBalance(tokenAddress);
-      
+
       const sellResult = await this.sellToken(tokenAddress, tokenBalance);
       if (!sellResult.success) {
         return { canSell: false, buyCommission: 100, sellCommission: 100 };
@@ -291,7 +293,7 @@ export class UniswapService {
       // Calculate commissions based on gas used (simplified)
       const buyGasUsed = parseInt(buyResult.gasUsed || '0');
       const sellGasUsed = parseInt(sellResult.gasUsed || '0');
-      
+
       // Simplified commission calculation (in reality, this would be more complex)
       const buyCommission = Math.min((buyGasUsed / 300000) * 10, 50);
       const sellCommission = Math.min((sellGasUsed / 300000) * 10, 50);
