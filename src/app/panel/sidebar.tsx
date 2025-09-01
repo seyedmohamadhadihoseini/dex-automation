@@ -14,7 +14,6 @@ export default function SideBarApp() {
     const [tabName,setTabName] = useState("");
     useEffect(()=>{
         setTabName(pathname.substring(pathname.lastIndexOf("/")+1,pathname.length))
-        console.log(tabName)
     },[pathname])
     const router = useRouter();
     const displayLists = [{name:"dashboard",icon:<MdDashboard />, },{name:"inputs",icon:<LuSettings />},

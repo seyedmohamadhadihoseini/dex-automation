@@ -1,5 +1,5 @@
 "use client";
-import { CellContext, Row } from "@tanstack/react-table";
+
 import { GetCustomColumns } from "./columns"
 import { DataTable } from "./data-table"
 import { store } from './store';

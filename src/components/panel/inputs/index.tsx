@@ -21,11 +21,11 @@ export default function InputsPanelComponent({ updateConfiguration,data }: { dat
         <div className={style.row}>
             <div className={style.element}>
                 <label htmlFor="">Liquidity(ETH)</label>
-                <input type="number" defaultValue={data.liquidityETH} required name="liquidityETH" placeholder="مقدار حداقل لیکویدیتی مانند 3" />
+                <input type="text" defaultValue={data.liquidityETH} required name="liquidityETH" placeholder="مقدار حداقل لیکویدیتی مانند 3" />
             </div>
             <div className={style.element}>
                 <label htmlFor="">Inputs Check(%)</label>
-                <input type="number" defaultValue={data.inputsCheck} required name="inputsCheck" placeholder="درصد از کل ورود برای تایید مثلا 2" />
+                <input type="text" defaultValue={data.inputsCheck} required name="inputsCheck" placeholder="درصد از کل ورود برای تایید مثلا 2" />
             </div>
 
         </div>
@@ -33,27 +33,27 @@ export default function InputsPanelComponent({ updateConfiguration,data }: { dat
         <div className={style.row}>
             <div className={style.element}>
                 <label htmlFor="">Tokens QTY</label>
-                <input type="number" defaultValue={data.tokensQty} required name="tokensQty" placeholder="تعداد  کل توکن ها در سبد مانند 10" />
+                <input type="text" defaultValue={data.tokensQty} required name="tokensQty" placeholder="تعداد  کل توکن ها در سبد مانند 10" />
             </div>
             <div className={style.element}>
                 <label htmlFor="">Buy Commission(%)</label>
-                <input type="number" defaultValue={data.buyCommission} required name="buyCommission" placeholder="حداقل کمیسیون خرید مانند 10" />
+                <input type="text" defaultValue={data.buyCommission} required name="buyCommission" placeholder="حداقل کمیسیون خرید مانند 10" />
             </div>
         </div>
         <div className={style.row}>
             <div className={style.element}>
                 <label htmlFor="">Entry Value(ETH)</label>
-                <input type="number" defaultValue={data.entryValueETH} required name="entryValueETH" placeholder="مقدار ورود در هر توکن مثلا 0.025" />
+                <input type="text" defaultValue={data.entryValueETH} required name="entryValueETH" placeholder="مقدار ورود در هر توکن مثلا 0.025" />
             </div>
             <div className={style.element}>
                 <label htmlFor="">Sell Commission(%)</label>
-                <input type="number" defaultValue={data.sellCommission} required name="sellCommission" placeholder="حداقل کمیسیون فروش مانند 10" />
+                <input type="text" defaultValue={data.sellCommission} required name="sellCommission" placeholder="حداقل کمیسیون فروش مانند 10" />
             </div>
         </div>
         <div className={style.row}>
             <div className={style.element}>
                 <label htmlFor="">Profit(%)</label>
-                <input type="number" defaultValue={data.profit} required name="profit" placeholder="مقدار سود برای فروش هر توکن مثلا 500" />
+                <input type="text" defaultValue={data.profit} required name="profit" placeholder="مقدار سود برای فروش هر توکن مثلا 500" />
             </div>
             <div className={style.element}>
                 <label htmlFor="sales-posibility">Sales Posibility</label>

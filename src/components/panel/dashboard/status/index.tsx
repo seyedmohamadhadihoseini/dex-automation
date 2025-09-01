@@ -4,7 +4,7 @@ import StatusComponent from "./status"
 import SwitchControlComponent from "./switch"
 import BalanceComponnet from "./balance"
 import { PairListStart, PairListStop, StartServer, StopServer } from "@/lib/connection"
-import { useWebSocket } from "@/lib/WebSocketContext"
+
 import { useEffect, useState } from "react"
 import { ServerStatus } from "@/lib/types/dashboard"
 

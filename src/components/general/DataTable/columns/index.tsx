@@ -15,7 +15,6 @@ export function GetCustomColumns(headers: string[], buttons: { title: string, co
             accessorKey: tableHeader,
             header: ({ }) => {
                 // const isSortable = !["g"].includes(tableHeader);
-                const isSortable = true;
                 return <div>{tableHeader}</div>
             },
             cell: ({ row }) => {

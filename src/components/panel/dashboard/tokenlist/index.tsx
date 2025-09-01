@@ -1,4 +1,4 @@
-import ShadcnDataTable, { HeadersTypes } from "@/components/general/DataTable";
+import ShadcnDataTable from "@/components/general/DataTable";
 import { Token } from "@/lib/types/token";
 import { TokenSell, TokenStop } from "@/lib/connection";
 import { toast } from "react-toastify";
