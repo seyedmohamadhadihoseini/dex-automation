@@ -93,7 +93,7 @@ export class UniswapService {
 
   async getTokenInfo(tokenAddress: string, pairAddress: string): Promise<Token | null> {
     try {
-      const provider = this.blockchainService.getHttpProvider();
+      const provider = this.blockchainService.getProvider();
 
       // Get token contract
       const tokenContract = new ethers.Contract(tokenAddress, this.erc20ABI, provider);
@@ -242,7 +242,7 @@ export class UniswapService {
 
   async getCurrentPrice(tokenAddress: string, pairAddress: string): Promise<string> {
     try {
-      const provider = this.blockchainService.getHttpProvider();
+      const provider = this.blockchainService.getProvider();
       const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
       const tokenContract = new ethers.Contract(tokenAddress, this.erc20ABI, provider);
 
