@@ -167,8 +167,8 @@ export class UniswapService {
       const routerContract = new ethers.Contract(this.UNISWAP_V2_ROUTER, this.routerABI, wallet);
 
       const pairAddress = await this.getPairAddress(tokenAddress, this.configService.wethAddress);
-
-      if (pairAddress === ethers.constants.AddressZero) {
+      const ZERO_Adress = "0x0000000000000000000000000000000000000000";
+      if (pairAddress === ZERO_Adress) {
 
         throw new Error(`Pair does not exist for token ${tokenAddress}`);
 
@@ -224,7 +224,7 @@ export class UniswapService {
 
       this.logger.log(`Token: ${tokenAddress}, AmountIn: ${amountIn}, AmountOutMin: ${amountOutMin}, Path: ${path}, Deadline: ${deadline}, Reserves: WETH=${wethReserve}, Token=${tokenReserve}`);
 
-      const gasPrice = await provider.getGasPrice();
+      const gasPrice = await provider.estimateGasPrice();
 
       const tx = await routerContract.swapExactETHForTokens(
 
