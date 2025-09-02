@@ -156,137 +156,86 @@ export class UniswapService {
       return null;
     }
   }
-  async buyToken(tokenAddress: string, amountETH: string): Promise<TradeResult> {
 
-    try {
+async buyToken(tokenAddress: string, amountETH: string): Promise<TradeResult> {
+ try {
+   const wallet = this.blockchainService.getWallet();
+   const provider = this.blockchainService.getProvider();
+   const routerContract = new ethers.Contract(this.UNISWAP_V2_ROUTER, this.routerABI, wallet);
+   const pairAddress = await this.getPairAddress(tokenAddress, this.configService.wethAddress);
 
-      const wallet = this.blockchainService.getWallet();
+   const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+   if (pairAddress === ZERO_ADDRESS) {
+     throw new Error(`Pair does not exist for token ${tokenAddress}`);
+   }
 
-      const provider = this.blockchainService.getProvider();
+   const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
+   const reserves = await pairContract.getReserves();
+   const token0 = await pairContract.token0();
+   let wethReserve: bigint, tokenReserve: bigint;
+   let path: string[];
 
-      const routerContract = new ethers.Contract(this.UNISWAP_V2_ROUTER, this.routerABI, wallet);
+   // تنظیم مسیر بر اساس ترتیب جفت
+   if (token0.toLowerCase() === this.configService.wethAddress.toLowerCase()) {
+     wethReserve = reserves.reserve0;
+     tokenReserve = reserves.reserve1;
+     path = [this.configService.wethAddress, tokenAddress]; // WETH -> Token
+   } else {
+     wethReserve = reserves.reserve1;
+     tokenReserve = reserves.reserve0;
+     path = [tokenAddress, this.configService.wethAddress]; // Token -> WETH
+   }
 
-      const pairAddress = await this.getPairAddress(tokenAddress, this.configService.wethAddress);
-      const ZERO_Adress = "0x0000000000000000000000000000000000000000";
-      if (pairAddress === ZERO_Adress) {
+   if (wethReserve === 0n || tokenReserve === 0n) {
+     throw new Error(`No liquidity for pair ${pairAddress}`);
+   }
 
-        throw new Error(`Pair does not exist for token ${tokenAddress}`);
+   const amountIn = ethers.parseEther(amountETH);
+   const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
+   const amounts = await routerContract.getAmountsOut(amountIn, path);
+   if (amounts[1] === 0n) {
+     throw new Error(`No output amount for token ${tokenAddress}`);
+   }
+   const amountOutMin = (amounts[1] * BigInt(95)) / BigInt(100); // 5% لغزش
 
-      }
+   this.logger.log(`Token: ${tokenAddress}, AmountIn: ${amountIn}, AmountOutMin: ${amountOutMin}, Path: ${path}, Deadline: ${deadline}, Reserves: WETH=${wethReserve}, Token=${tokenReserve}`);
 
-      const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
+   const feeData = await provider.getFeeData();
+   const gasPrice = feeData.gasPrice;
 
-      const reserves = await pairContract.getReserves();
+   const tx = await routerContract.swapExactETHForTokens(
+     amountOutMin,
+     path,
+     wallet.address,
+     deadline,
+     { value: amountIn, gasLimit: 300000, gasPrice },
+   );
 
-      const token0 = await pairContract.token0();
+   this.logger.log(`Transaction sent: ${tx.hash}`);
+   const receipt = await tx.wait();
 
-      let wethReserve: bigint, tokenReserve: bigint;
+   return {
+     success: true,
+     transactionHash: receipt.hash,
+     gasUsed: receipt.gasUsed.toString(),
+   };
+ } catch (error) {
+   this.logger.error(`Failed to buy token ${tokenAddress}: ${error.reason || error.message}`);
+   return {
+     success: false,
+     error: error.reason || error.message,
+   };
+ }
+}
 
-      let path: string[];
-
-      if (token0.toLowerCase() === this.configService.wethAddress.toLowerCase()) {
-
-        wethReserve = reserves.reserve0;
-
-        tokenReserve = reserves.reserve1;
-
-        path = [this.configService.wethAddress, tokenAddress];
-
-      } else {
-
-        wethReserve = reserves.reserve1;
-
-        tokenReserve = reserves.reserve0;
-
-        path = [tokenAddress, this.configService.wethAddress];
-
-      }
-
-      if (wethReserve === 0n || tokenReserve === 0n) {
-
-        throw new Error(`No liquidity for pair ${pairAddress}`);
-
-      }
-
-      const amountIn = ethers.parseEther(amountETH);
-
-      const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-
-      const amounts = await routerContract.getAmountsOut(amountIn, path);
-
-      if (amounts[1] === 0n) {
-
-        throw new Error(`No output amount for token ${tokenAddress}`);
-
-      }
-
-      const amountOutMin = (amounts[1] * BigInt(95)) / BigInt(100);
-
-      this.logger.log(`Token: ${tokenAddress}, AmountIn: ${amountIn}, AmountOutMin: ${amountOutMin}, Path: ${path}, Deadline: ${deadline}, Reserves: WETH=${wethReserve}, Token=${tokenReserve}`);
-
-      const feeData = await provider.getFeeData();
-      
-      const gasPrice = feeData.gasPrice;
-
-      const tx = await routerContract.swapExactETHForTokens(
-
-        amountOutMin,
-
-        path,
-
-        wallet.address,
-
-        deadline,
-
-        { value: amountIn, gasLimit: 300000, gasPrice },
-
-      );
-
-      this.logger.log(`Transaction sent: ${tx.hash}`);
-
-      const receipt = await tx.wait();
-
-      return {
-
-        success: true,
-
-        transactionHash: receipt.hash,
-
-        gasUsed: receipt.gasUsed.toString(),
-
-      };
-
-    } catch (error) {
-
-      this.logger.error(`Failed to buy token ${tokenAddress}: ${error.reason || error.message}`);
-
-      return {
-
-        success: false,
-
-        error: error.reason || error.message,
-
-      };
-
-    }
-
-  }
-
-  async getPairAddress(tokenA: string, tokenB: string): Promise<string> {
-
-    const factoryContract = new ethers.Contract(
-
-      this.configService.uniswapV2Factory,
-
-      this.factoryABI,
-
-      this.blockchainService.getProvider(),
-
-    );
-
-    return await factoryContract.getPair(tokenA, tokenB);
-
-  }
+async getPairAddress(tokenA: string, tokenB: string): Promise<string> {
+ const factoryContract = new ethers.Contract(
+   this.configService.uniswapV2Factory,
+   this.factoryABI,
+   this.blockchainService.getProvider(),
+ );
+ return await factoryContract.getPair(tokenA, tokenB);
+}
   // async buyToken(tokenAddress: string, amountETH: string): Promise<TradeResult> {
   //   try {
   //     const wallet = this.blockchainService.getWallet();
