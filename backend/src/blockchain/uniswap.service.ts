@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { BlockchainService } from './blockchain.service';
 import { AppConfigService } from '../config/config.service';
 import { Token, TokenPair, TradeResult } from '../interfaces/token.interface';
-
+import { Multicall } from 'ethers-multicall';
 @Injectable()
 export class UniswapService {
   private readonly logger = new Logger(UniswapService.name);
@@ -91,77 +91,105 @@ export class UniswapService {
     }
   }
 
-  async getTokenInfo(tokenAddress: string, pairAddress: string): Promise<Token | null> {
-    try {
-      const provider = this.blockchainService.getProvider();
 
-      // Get token contract
-      const tokenContract = new ethers.Contract(tokenAddress, this.erc20ABI, provider);
 
-      // Get pair contract
-      const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
+async getTokenInfo(tokenAddress: string, pairAddress: string): Promise<Token | null> {
+ try {
+   const provider = this.blockchainService.getProvider();
+   const tokenContract = new ethers.Contract(tokenAddress, this.erc20ABI, provider);
+   const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
 
-      // Get token details
-      const [name, symbol, decimals] = await Promise.all([
-        tokenContract.name(),
-        tokenContract.symbol(),
-        tokenContract.decimals(),
-      ]);
+   // بررسی وجود قرارداد توکن
+   const code = await provider.getCode(tokenAddress);
+   if (code === '0x') {
+     this.logger.warn(`Token contract ${tokenAddress} does not exist or is not deployed`);
+     return null;
+   }
 
-      // Get pair reserves
-      const reserves = await pairContract.getReserves();
-      const token0 = await pairContract.token0();
-      const token1 = await pairContract.token1();
+   // فراخوانی جداگانه برای مدیریت خطاها
+   let name = 'Unknown';
+   let symbol = 'Unknown';
+   let decimals = 18; // مقدار پیش‌فرض
+   try {
+     name = await tokenContract.name();
+   } catch (error) {
+     this.logger.warn(`Failed to fetch name for ${tokenAddress}: ${error.message}`);
+   }
+   try {
+     symbol = await tokenContract.symbol();
+   } catch (error) {
+     this.logger.warn(`Failed to fetch symbol for ${tokenAddress}: ${error.message}`);
+   }
+   try {
+     decimals = await tokenContract.decimals();
+   } catch (error) {
+     this.logger.warn(`Failed to fetch decimals for ${tokenAddress}: ${error.message}`);
+   }
 
-      // Determine which reserve is WETH
-      const wethAddress = this.configService.wethAddress;
-      let wethReserve: bigint;
-      let tokenReserve: bigint;
+   let reserves, token0, token1;
+   try {
+     [reserves, token0, token1] = await Promise.all([
+       pairContract.getReserves(),
+       pairContract.token0(),
+       pairContract.token1(),
+     ]);
+   } catch (error) {
+     this.logger.warn(`Failed to fetch pair data for ${pairAddress}: ${error.message}`);
+     return null;
+   }
 
-      if (token0.toLowerCase() === wethAddress.toLowerCase()) {
-        wethReserve = reserves.reserve0;
-        tokenReserve = reserves.reserve1;
-      } else {
-        wethReserve = reserves.reserve1;
-        tokenReserve = reserves.reserve0;
-      }
+   const wethAddress = this.configService.wethAddress;
+   let wethReserve: bigint;
+   let tokenReserve: bigint;
 
-      // Calculate liquidity in ETH
-      const liquidityETH = ethers.formatEther(wethReserve);
+   if (token0.toLowerCase() === wethAddress.toLowerCase()) {
+     wethReserve = reserves.reserve0;
+     tokenReserve = reserves.reserve1;
+   } else {
+     wethReserve = reserves.reserve1;
+     tokenReserve = reserves.reserve0;
+   }
 
-      // Calculate initial price (WETH per token)
-      // Calculate initial price (WETH per token)
-      const decimalsNumber = Number(decimals);
-      let buyPrice = '0';
-      if (tokenReserve !== 0n) {
-        const price = (wethReserve * BigInt(10 ** decimalsNumber)) / tokenReserve;
-        buyPrice = ethers.formatEther(price);
+   if (wethReserve === 0n || tokenReserve === 0n) {
+     this.logger.warn(`No liquidity for pair ${pairAddress}`);
+     return null;
+   }
 
-      }else{
-        this.logger.warn(`Can't calculate price, token reserve is zero for ${tokenAddress}`)
-      }
+   const decimalsNumber = Number(decimals);
+   if (isNaN(decimalsNumber) || decimalsNumber < 0) {
+     this.logger.warn(`Invalid decimals for token ${tokenAddress}`);
+     return null;
+   }
 
-      return {
-        address: tokenAddress,
-        name,
-        symbol,
-        decimals,
-        pair: pairAddress,
-        liquidity: tokenReserve.toString(),
-        liquidityETH,
-        buyPrice,
-        currentPrice: buyPrice,
-        profit: 0,
-        buyTime: new Date(),
-        buyTransactionHash: '',
-        status: 'active',
-      };
+   let buyPrice = '0';
+   if (tokenReserve !== 0n) {
+     const price = (wethReserve * BigInt(10 ** decimalsNumber)) / tokenReserve;
+     buyPrice = ethers.formatEther(price);
+   } else {
+     this.logger.warn(`Cannot calculate price: tokenReserve is zero for ${tokenAddress}`);
+     return null;
+   }
 
-    } catch (error) {
-      this.logger.error(`Failed to get token info for ${tokenAddress}`, error);
-      return null;
-    }
-  }
+   return {
+     address: tokenAddress,
+     name,
+     symbol,
+     decimals: decimalsNumber,
+     pair: pairAddress,
+     liquidity: tokenReserve.toString(),
+     liquidityETH: ethers.formatEther(wethReserve),
+     buyPrice,
+     currentPrice: buyPrice,
+     profit: 0,
+     buyTime: new Date(),
+     buyTransactionHash: '',
+     status: 'active',
+   };
+ } catch (error) {
+   this.logger.error(`Failed to get token info for ${tokenAddress}: ${error.message}`);
+   return null;
+ }
+}
 
 
   async buyToken(tokenAddress: string, amountETH: string): Promise<TradeResult> {
