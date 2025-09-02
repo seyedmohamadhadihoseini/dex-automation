@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import { BlockchainService } from './blockchain.service';
 import { AppConfigService } from '../config/config.service';
 import { Token, TokenPair, TradeResult } from '../interfaces/token.interface';
-import { Multicall } from 'ethers-multicall';
+
 @Injectable()
 export class UniswapService {
   private readonly logger = new Logger(UniswapService.name);
