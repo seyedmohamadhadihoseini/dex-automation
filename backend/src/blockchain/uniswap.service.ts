@@ -224,7 +224,9 @@ export class UniswapService {
 
       this.logger.log(`Token: ${tokenAddress}, AmountIn: ${amountIn}, AmountOutMin: ${amountOutMin}, Path: ${path}, Deadline: ${deadline}, Reserves: WETH=${wethReserve}, Token=${tokenReserve}`);
 
-      const gasPrice = await provider.estimateGasPrice();
+      const feeData = await provider.getFeeData();
+      
+      const gasPrice = feeData.gasPrice;
 
       const tx = await routerContract.swapExactETHForTokens(
 
