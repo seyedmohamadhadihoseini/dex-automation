@@ -193,107 +193,201 @@ export class UniswapService {
 
 
 
+
   async buyToken(tokenAddress: string, amountETH: string): Promise<TradeResult> {
+
     try {
+
       const wallet = this.blockchainService.getWallet();
+
       const provider = this.blockchainService.getProvider();
+
       const routerContract = new ethers.Contract(this.UNISWAP_V2_ROUTER, this.routerABI, wallet);
+
       const pairAddress = await this.getPairAddress(tokenAddress, this.configService.wethAddress);
 
       const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+
       if (pairAddress === ZERO_ADDRESS) {
+
         throw new Error(`Pair does not exist for token ${tokenAddress}`);
+
       }
 
       const code = await provider.getCode(pairAddress);
+
       if (code === '0x') {
+
         throw new Error(`Pair contract ${pairAddress} does not exist or is not deployed`);
+
       }
 
       const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
+
       let reserves, token0;
+
       try {
+
         [reserves, token0] = await Promise.all([
+
           pairContract.getReserves(),
+
           pairContract.token0(),
+
         ]);
+
       } catch (error) {
+
         throw new Error(`Failed to fetch pair data for ${pairAddress}: ${error.message}`);
+
       }
 
       let wethReserve: bigint, tokenReserve: bigint;
+
       let path: string[];
 
       if (token0.toLowerCase() === this.configService.wethAddress.toLowerCase()) {
+
         wethReserve = reserves.reserve0;
+
         tokenReserve = reserves.reserve1;
+
         path = [this.configService.wethAddress, tokenAddress];
+
       } else {
+
         wethReserve = reserves.reserve1;
+
         tokenReserve = reserves.reserve0;
+
         path = [tokenAddress, this.configService.wethAddress];
+
       }
 
       if (wethReserve === 0n || tokenReserve === 0n) {
+
         throw new Error(`No liquidity for pair ${pairAddress}`);
+
       }
 
       const amountIn = ethers.parseEther(amountETH);
 
-      // تنظیم deadline با استفاده از blockTimestamp
+      // بررسی موجودی کیف پول
+
+      const balance = await provider.getBalance(wallet.address);
+
+      const feeData = await provider.getFeeData();
+
+      const gasPrice = feeData.gasPrice || BigInt(20e9); // پیش‌فرض 20 Gwei
+
+      const gasLimit = BigInt(300000);
+
+      const gasCost = gasPrice * gasLimit;
+
+      const totalCost = amountIn + gasCost;
+
+      if (balance < totalCost) {
+
+        throw new Error(
+
+          `Insufficient funds: balance=${ethers.formatEther(balance)} ETH, required=${ethers.formatEther(totalCost)} ETH`,
+
+        );
+
+      }
+
+      // تنظیم deadline با blockTimestamp
+
       const block = await provider.getBlock('latest');
+
       const blockTimestamp = block.timestamp;
-      const deadline = blockTimestamp + 60 * 30; // 30 دقیقه از زمان بلاک فعلی
-      this.logger.log(`BlockTimestamp: ${blockTimestamp}, Deadline: ${deadline}`);
+
+      const deadline = blockTimestamp + 60 * 30; // 30 دقیقه
+
       let amounts;
+
       try {
+
         amounts = await routerContract.getAmountsOut(amountIn, path);
+
       } catch (error) {
+
         throw new Error(`Failed to get amounts out for ${tokenAddress}: ${error.message}`);
+
       }
 
       if (amounts[1] === 0n) {
+
         throw new Error(`No output amount for token ${tokenAddress}`);
+
       }
+
       const amountOutMin = (amounts[1] * BigInt(95)) / BigInt(100);
 
-      this.logger.log(`Token: ${tokenAddress}, AmountIn: ${amountIn}, AmountOutMin: ${amountOutMin}, Path: ${path}, Deadline: ${deadline}, Reserves: WETH=${wethReserve}, Token=${tokenReserve}`);
+      this.logger.log(
 
-      const feeData = await provider.getFeeData();
-      const gasPrice = feeData.gasPrice;
+        `Token: ${tokenAddress}, AmountIn: ${amountIn}, AmountOutMin: ${amountOutMin}, Path: ${path}, Deadline: ${deadline}, Reserves: WETH=${wethReserve}, Token=${tokenReserve}, Balance: ${ethers.formatEther(balance)}, GasCost: ${ethers.formatEther(gasCost)}`,
+
+      );
 
       const tx = await routerContract.swapExactETHForTokens(
+
         amountOutMin,
+
         path,
+
         wallet.address,
+
         deadline,
-        { value: amountIn, gasLimit: 300000, gasPrice },
+
+        { value: amountIn, gasLimit, gasPrice },
+
       );
 
       this.logger.log(`Transaction sent: ${tx.hash}`);
+
       const receipt = await tx.wait();
 
       return {
+
         success: true,
+
         transactionHash: receipt.hash,
+
         gasUsed: receipt.gasUsed.toString(),
+
       };
+
     } catch (error) {
+
       this.logger.error(`Failed to buy token ${tokenAddress}: ${error.reason || error.message}`);
+
       return {
+
         success: false,
+
         error: error.reason || error.message,
+
       };
+
     }
+
   }
 
   async getPairAddress(tokenA: string, tokenB: string): Promise<string> {
+
     const factoryContract = new ethers.Contract(
+
       this.configService.uniswapV2Factory,
+
       this.factoryABI,
+
       this.blockchainService.getProvider(),
+
     );
+
     return await factoryContract.getPair(tokenA, tokenB);
+
   }
   // async buyToken(tokenAddress: string, amountETH: string): Promise<TradeResult> {
   //   try {
@@ -425,7 +519,7 @@ export class UniswapService {
 
       const sellResult = await this.sellToken(tokenAddress, tokenBalance);
       if (!sellResult.success) {
-        return { canSell: false, buyCommission: 100, sellCommission: 100,error:sellResult.error };
+        return { canSell: false, buyCommission: 100, sellCommission: 100, error: sellResult.error };
       }
 
       // Calculate commissions based on gas used (simplified)
