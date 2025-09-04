@@ -519,7 +519,7 @@ export class UniswapService {
 
       const sellResult = await this.sellToken(tokenAddress, tokenBalance);
       if (!sellResult.success) {
-        return { canSell: false, buyCommission: 100, sellCommission: 100, error: sellResult.error };
+        return { canSell: false, buyCommission: 100, sellCommission: 100, error: "" };
       }
 
       // Calculate commissions based on gas used (simplified)
