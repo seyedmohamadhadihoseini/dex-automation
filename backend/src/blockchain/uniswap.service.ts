@@ -245,7 +245,6 @@ export class UniswapService {
       const blockTimestamp = block.timestamp;
       const deadline = blockTimestamp + 60 * 30; // 30 دقیقه از زمان بلاک فعلی
       this.logger.log(`BlockTimestamp: ${blockTimestamp}, Deadline: ${deadline}`);
-
       let amounts;
       try {
         amounts = await routerContract.getAmountsOut(amountIn, path);
@@ -411,14 +410,14 @@ export class UniswapService {
     }
   }
 
-  async testSalesPossibility(tokenAddress: string, testAmountETH: string): Promise<{ canSell: boolean; buyCommission: number; sellCommission: number }> {
+  async testSalesPossibility(tokenAddress: string, testAmountETH: string): Promise<{ canSell: boolean; buyCommission: number; sellCommission: number, error?: string }> {
     try {
       // This is a simplified test - in production, you might want to use a more sophisticated approach
       // like calling static functions or using a fork of the mainnet for testing
 
       const buyResult = await this.buyToken(tokenAddress, testAmountETH);
       if (!buyResult.success) {
-        return { canSell: false, buyCommission: 100, sellCommission: 100 };
+        return { canSell: false, buyCommission: 100, sellCommission: 100, error: buyResult.error };
       }
 
       // Get token balance
@@ -426,7 +425,7 @@ export class UniswapService {
 
       const sellResult = await this.sellToken(tokenAddress, tokenBalance);
       if (!sellResult.success) {
-        return { canSell: false, buyCommission: 100, sellCommission: 100 };
+        return { canSell: false, buyCommission: 100, sellCommission: 100,error:sellResult.error };
       }
 
       // Calculate commissions based on gas used (simplified)

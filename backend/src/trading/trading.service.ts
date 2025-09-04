@@ -127,7 +127,7 @@ export class TradingService {
     }
   }
 
-  private async testTokenSalesPossibility(token: Token): Promise<{ canSell: boolean; buyCommission: number; sellCommission: number }> {
+  private async testTokenSalesPossibility(token: Token): Promise<{ canSell: boolean; buyCommission: number; sellCommission: number ,error?:string}> {
     try {
       const testAmountETH = (this.tradingInputs.entryValueETH * this.tradingInputs.inputsCheck / 100).toString();
       
@@ -139,6 +139,7 @@ export class TradingService {
         this.addLog('success', `${token.symbol} passed sales test. Buy commission: ${result.buyCommission}%, Sell commission: ${result.sellCommission}%`);
       } else {
         this.addLog('warning', `${token.symbol} failed sales test (Honeypot detected)`);
+        this.addLog('error',`${token.symbol} failed because of ${result.error} `)
       }
 
       return result;
@@ -153,7 +154,7 @@ export class TradingService {
       this.addLog('success', `Executing main trade for ${token.symbol} with ${this.tradingInputs.entryValueETH} ETH`);
       
       const buyResult = await this.uniswapService.buyToken(token.address, this.tradingInputs.entryValueETH.toString());
-      
+      console.log(`buy result:${buyResult}`);
       if (buyResult.success) {
         // Update token with purchase information
         token.buyTransactionHash = buyResult.transactionHash;
@@ -169,6 +170,7 @@ export class TradingService {
         this.startTokenMonitoring(token);
         
       } else {
+        console.log('the logs added');
         this.addLog('error', `Failed to buy ${token.symbol}: ${buyResult.error}`);
       }
     } catch (error) {
