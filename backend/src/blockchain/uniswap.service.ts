@@ -202,9 +202,13 @@ export class UniswapService {
 
       const provider = this.blockchainService.getProvider();
 
-      const routerContract = new ethers.Contract(this.UNISWAP_V2_ROUTER, this.routerABI, wallet);
+      const UNISWAP_V2_ROUTER = this.UNISWAP_V2_ROUTER; // Uniswap V2 Router02 (Mainnet)
 
-      const pairAddress = await this.getPairAddress(tokenAddress, this.configService.wethAddress);
+      const WETH_ADDRESS = this.configService.wethAddress; // WETH (Mainnet)
+
+      const routerContract = new ethers.Contract(UNISWAP_V2_ROUTER, this.routerABI, wallet);
+
+      const pairAddress = await this.getPairAddress(tokenAddress, WETH_ADDRESS);
 
       const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
@@ -246,13 +250,15 @@ export class UniswapService {
 
       let path: string[];
 
-      if (token0.toLowerCase() === this.configService.wethAddress.toLowerCase()) {
+      // تنظیم مسیر: همیشه WETH به عنوان توکن اول برای swapExactETHForTokens
+
+      if (token0.toLowerCase() === WETH_ADDRESS.toLowerCase()) {
 
         wethReserve = reserves.reserve0;
 
         tokenReserve = reserves.reserve1;
 
-        path = [this.configService.wethAddress, tokenAddress];
+        path = [WETH_ADDRESS, tokenAddress]; // WETH -> Token
 
       } else {
 
@@ -260,7 +266,7 @@ export class UniswapService {
 
         tokenReserve = reserves.reserve0;
 
-        path = [tokenAddress, this.configService.wethAddress];
+        path = [WETH_ADDRESS, tokenAddress]; // WETH -> Token (force WETH first)
 
       }
 
@@ -291,12 +297,11 @@ export class UniswapService {
         throw new Error(
 
           `Insufficient funds: balance=${ethers.formatEther(balance)} ETH, required=${ethers.formatEther(totalCost)} ETH`,
-
         );
 
       }
 
-      // تنظیم deadline با blockTimestamp
+      // تنظیم deadline
 
       const block = await provider.getBlock('latest');
 
@@ -386,7 +391,11 @@ export class UniswapService {
 
     );
 
-    return await factoryContract.getPair(tokenA, tokenB);
+    // اطمینان از ترتیب درست توکن‌ها برای جفت
+
+    const [token0, token1] = tokenA.toLowerCase() < tokenB.toLowerCase() ? [tokenA, tokenB] : [tokenB, tokenA];
+
+    return await factoryContract.getPair(token0, token1);
 
   }
   // async buyToken(tokenAddress: string, amountETH: string): Promise<TradeResult> {
