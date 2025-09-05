@@ -18,13 +18,10 @@ export class BlockchainService {
     try {
       // WebSocket provider for real-time events
       this.provider = new ethers.WebSocketProvider(this.configService.infuraUrl);
-      
       // HTTP provider for transactions
       this.httpProvider = new ethers.JsonRpcProvider(this.configService.infuraHttpUrl);
-      
       // Initialize wallet
-      this.wallet = new ethers.Wallet(this.configService.walletPrivateKey, this.httpProvider);
-      
+      this.wallet = new ethers.Wallet(this.configService.walletPrivateKey, this.provider);
       this.logger.log('Blockchain providers initialized successfully');
     } catch (error) {
       this.logger.error('Failed to initialize blockchain providers', error);

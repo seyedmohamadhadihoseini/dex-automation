@@ -194,12 +194,10 @@ export class UniswapService {
 
 
 
-  async buyToken(tokenAddress: string, amountETH: string): Promise<TradeResult> {
+  async buyToken(token: Token, amountETH: string): Promise<TradeResult> {
 
     try {
-
       const wallet = this.blockchainService.getWallet();
-
       const provider = this.blockchainService.getProvider();
 
       const UNISWAP_V2_ROUTER = this.UNISWAP_V2_ROUTER; // Uniswap V2 Router02 (Mainnet)
@@ -207,14 +205,13 @@ export class UniswapService {
       const WETH_ADDRESS = this.configService.wethAddress; // WETH (Mainnet)
 
       const routerContract = new ethers.Contract(UNISWAP_V2_ROUTER, this.routerABI, wallet);
-
-      const pairAddress = await this.getPairAddress(tokenAddress, WETH_ADDRESS);
+      const pairAddress = token.pair;
 
       const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
       if (pairAddress === ZERO_ADDRESS) {
 
-        throw new Error(`Pair does not exist for token ${tokenAddress}`);
+        throw new Error(`Pair does not exist for token ${token.address}`);
 
       }
 
@@ -248,26 +245,15 @@ export class UniswapService {
 
       let wethReserve: bigint, tokenReserve: bigint;
 
-      let path: string[];
+      let path: string[] = [WETH_ADDRESS, token.address];
 
-      // تنظیم مسیر: همیشه WETH به عنوان توکن اول برای swapExactETHForTokens
 
       if (token0.toLowerCase() === WETH_ADDRESS.toLowerCase()) {
-
         wethReserve = reserves.reserve0;
-
         tokenReserve = reserves.reserve1;
-
-        path = [WETH_ADDRESS, tokenAddress]; // WETH -> Token
-
       } else {
-
         wethReserve = reserves.reserve1;
-
         tokenReserve = reserves.reserve0;
-
-        path = [WETH_ADDRESS, tokenAddress]; // WETH -> Token (force WETH first)
-
       }
 
       if (wethReserve === 0n || tokenReserve === 0n) {
@@ -304,75 +290,43 @@ export class UniswapService {
       // تنظیم deadline
 
       const block = await provider.getBlock('latest');
-
       const blockTimestamp = block.timestamp;
-
       const deadline = blockTimestamp + 60 * 30; // 30 دقیقه
-
       let amounts;
-
       try {
-
         amounts = await routerContract.getAmountsOut(amountIn, path);
 
       } catch (error) {
 
-        throw new Error(`Failed to get amounts out for ${tokenAddress}: ${error.message}`);
+        throw new Error(`Failed to get amounts out for ${token.address}: ${error.message}`);
 
       }
-
       if (amounts[1] === 0n) {
-
-        throw new Error(`No output amount for token ${tokenAddress}`);
-
+        throw new Error(`No output amount for token ${token.address}`);
       }
 
       const amountOutMin = (amounts[1] * BigInt(95)) / BigInt(100);
-
-      this.logger.log(
-
-        `Token: ${tokenAddress}, AmountIn: ${amountIn}, AmountOutMin: ${amountOutMin}, Path: ${path}, Deadline: ${deadline}, Reserves: WETH=${wethReserve}, Token=${tokenReserve}, Balance: ${ethers.formatEther(balance)}, GasCost: ${ethers.formatEther(gasCost)}`,
-
-      );
-
       const tx = await routerContract.swapExactETHForTokens(
-
         amountOutMin,
-
         path,
-
         wallet.address,
-
         deadline,
-
         { value: amountIn, gasLimit, gasPrice },
-
       );
-
       this.logger.log(`Transaction sent: ${tx.hash}`);
-
       const receipt = await tx.wait();
 
       return {
-
         success: true,
-
         transactionHash: receipt.hash,
-
         gasUsed: receipt.gasUsed.toString(),
-
       };
 
     } catch (error) {
-
-      this.logger.error(`Failed to buy token ${tokenAddress}: ${error.reason || error.message}`);
-
+      this.logger.error(`Failed to buy token ${token.address}: ${error.reason || error.message}`);
       return {
-
         success: false,
-
-        error: error.reason || error.message,
-
+        error: `${error.reason || error.message}`,
       };
 
     }
@@ -513,24 +467,26 @@ export class UniswapService {
     }
   }
 
-  async testSalesPossibility(tokenAddress: string, testAmountETH: string): Promise<{ canSell: boolean; buyCommission: number; sellCommission: number, error?: string }> {
+  async testSalesPossibility(token:Token, testAmountETH: string): Promise<{ canSell: boolean; buyCommission: number; sellCommission: number, error?: string }> {
+    let count = 0;
     try {
       // This is a simplified test - in production, you might want to use a more sophisticated approach
       // like calling static functions or using a fork of the mainnet for testing
 
-      const buyResult = await this.buyToken(tokenAddress, testAmountETH);
+      const buyResult = await this.buyToken(token, testAmountETH);
       if (!buyResult.success) {
         return { canSell: false, buyCommission: 100, sellCommission: 100, error: buyResult.error };
-      }
+      } 
+      count ++;
 
       // Get token balance
-      const tokenBalance = await this.blockchainService.getTokenBalance(tokenAddress);
+      const tokenBalance = await this.blockchainService.getTokenBalance(token.address);
 
-      const sellResult = await this.sellToken(tokenAddress, tokenBalance);
+      const sellResult = await this.sellToken(token.address, tokenBalance);
       if (!sellResult.success) {
         return { canSell: false, buyCommission: 100, sellCommission: 100, error: "" };
       }
-
+      count ++;
       // Calculate commissions based on gas used (simplified)
       const buyGasUsed = parseInt(buyResult.gasUsed || '0');
       const sellGasUsed = parseInt(sellResult.gasUsed || '0');
@@ -546,8 +502,8 @@ export class UniswapService {
       };
 
     } catch (error) {
-      this.logger.error(`Failed to test sales possibility for ${tokenAddress}`, error);
-      return { canSell: false, buyCommission: 100, sellCommission: 100 };
+      this.logger.error(`Failed to test sales possibility round ${count} for ${token.address}`, error);
+      return { canSell: false, buyCommission: 100, sellCommission: 100,error:`Failed to test sales possibility round ${count} for ${token.address}` };
     }
   }
 }

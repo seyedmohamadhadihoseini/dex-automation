@@ -93,6 +93,7 @@ export class TradingGateway implements OnGatewayInit, OnGatewayConnection, OnGat
       if (this.connectedClients.size > 0) {
         try {
           const logs = this.tradingService.getLogs();
+          
           this.server.emit('logs', logs);
         } catch (error) {
           this.logger.error('Failed to broadcast logs', error);

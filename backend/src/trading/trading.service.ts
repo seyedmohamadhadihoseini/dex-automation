@@ -60,7 +60,11 @@ export class TradingService {
       if (!this.isServerRunning) {
         throw new Error('Server must be running to start pair listening');
       }
+      
+      // const token = await this.uniswapService.getTokenInfo('0x47Db4113e9ec4444c857B177729c2f2960490A23','0xdD003624DB2754B33531f202a7841C9035718Ab4');
 
+      
+      // console.log(token.decimals);
       this.isPairListenRunning = true;
       this.addLog('success', 'Started listening for new token pairs');
       
@@ -133,7 +137,7 @@ export class TradingService {
       
       this.addLog('success', `Testing sales possibility for ${token.symbol} with ${testAmountETH} ETH`);
       
-      const result = await this.uniswapService.testSalesPossibility(token.address, testAmountETH);
+      const result = await this.uniswapService.testSalesPossibility(token, testAmountETH);
       
       if (result.canSell) {
         this.addLog('success', `${token.symbol} passed sales test. Buy commission: ${result.buyCommission}%, Sell commission: ${result.sellCommission}%`);
@@ -153,7 +157,7 @@ export class TradingService {
     try {
       this.addLog('success', `Executing main trade for ${token.symbol} with ${this.tradingInputs.entryValueETH} ETH`);
       
-      const buyResult = await this.uniswapService.buyToken(token.address, this.tradingInputs.entryValueETH.toString());
+      const buyResult = await this.uniswapService.buyToken(token, this.tradingInputs.entryValueETH.toString());
       console.log(`buy result:${buyResult}`);
       if (buyResult.success) {
         // Update token with purchase information
