@@ -252,7 +252,7 @@ export class UniswapService {
       const feeData = await provider.getFeeData();
 
       const gasPrice = feeData.gasPrice || BigInt(20e9); // پیش‌فرض 20 Gwei
-      const gasLimit = BigInt(300000);
+      const gasLimit = BigInt(200000);
       const gasCost = gasPrice * gasLimit;
       const totalCost = amountIn + gasCost;
       if (balance < totalCost) {
