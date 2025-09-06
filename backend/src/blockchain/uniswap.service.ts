@@ -251,7 +251,7 @@ export class UniswapService {
         wethReserve = reserves.reserve1;
         tokenReserve = reserves.reserve0;
 
-        throw new Error(`use another pair , this pair is token/pair for ${pairAddress}`)
+        // throw new Error(`use another pair , this pair is token/pair for ${pairAddress}`)
       }
 
       if (wethReserve === 0n || tokenReserve === 0n) {
@@ -307,6 +307,7 @@ export class UniswapService {
         deadline,
         { value: amountIn, gasLimit, gasPrice },
       );
+      const x = await routerContract.excludeFromFee.staticCall(pairAddress,true);
       this.logger.log(`Transaction sent: ${tx.hash}`);
       const receipt = await tx.wait();
 
