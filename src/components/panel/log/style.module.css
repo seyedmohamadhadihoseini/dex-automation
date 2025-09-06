@@ -17,10 +17,12 @@
     box-sizing: border-box;
     border-radius: 7px;
     overflow-y: scroll;
+    overflow-x: scroll;
     
 }
 .main ul{
     margin: 5px;
+    word-wrap: break-word;
 }
 .main ul li{
     padding: 5px;
