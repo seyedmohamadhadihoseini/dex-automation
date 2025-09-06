@@ -200,105 +200,79 @@ export class UniswapService {
     try {
       const wallet = this.blockchainService.getWallet();
       const provider = this.blockchainService.getProvider();
-
       const UNISWAP_V2_ROUTER = this.UNISWAP_V2_ROUTER; // Uniswap V2 Router02 (Mainnet)
-
       const WETH_ADDRESS = this.configService.wethAddress; // WETH (Mainnet)
-
       const routerContract = new ethers.Contract(UNISWAP_V2_ROUTER, this.routerABI, wallet);
       const pairAddress = token.pair;
-
       const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-
       if (pairAddress === ZERO_ADDRESS) {
-
         throw new Error(`Pair does not exist for token ${token.address}`);
-
       }
-
       const code = await provider.getCode(pairAddress);
-
       if (code === '0x') {
-
         throw new Error(`Pair contract ${pairAddress} does not exist or is not deployed`);
-
       }
-
       const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
 
-      
-      let reserves,token0;
-      try{
-        reserves = await  pairContract.getReserves();
-      }catch(error){
-        throw new Error(`(${token.name})failed to fetch reverses for ${pairAddress}: ${error.message}`);
-      }
-      try{
-        token0 = await pairContract.token0();
-      }catch(error){
-        throw new Error(`(${token.name})failed to fetch token0 for ${pairAddress}: ${error.message}`);
-      }
-
-      let wethReserve: bigint, tokenReserve: bigint;
-
       let path: string[] = [WETH_ADDRESS, token.address];
+      
+      // let reserves,token0;
+      // try{
+      //   reserves = await  pairContract.getReserves();
+      // }catch(error){
+      //   throw new Error(`(${token.name})failed to fetch reverses for ${pairAddress}: ${error.message}`);
+      // }
+      // try{
+      //   token0 = await pairContract.token0();
+      // }catch(error){
+      //   throw new Error(`(${token.name})failed to fetch token0 for ${pairAddress}: ${error.message}`);
+      // }
+
+      // let wethReserve: bigint, tokenReserve: bigint;
 
 
-      if (token0.toLowerCase() === WETH_ADDRESS.toLowerCase()) {
-        wethReserve = reserves.reserve0;
-        tokenReserve = reserves.reserve1;
-      } else {
-        wethReserve = reserves.reserve1;
-        tokenReserve = reserves.reserve0;
 
-        // throw new Error(`use another pair , this pair is token/pair for ${pairAddress}`)
-      }
+      // if (token0.toLowerCase() === WETH_ADDRESS.toLowerCase()) {
+      //   wethReserve = reserves.reserve0;
+      //   tokenReserve = reserves.reserve1;
+      // } else {
+      //   wethReserve = reserves.reserve1;
+      //   tokenReserve = reserves.reserve0;
 
-      if (wethReserve === 0n || tokenReserve === 0n) {
-        throw new Error(`No liquidity for pair ${pairAddress}`);
-      }
+      //   // throw new Error(`use another pair , this pair is token/pair for ${pairAddress}`)
+      // }
+
+      // if (wethReserve === 0n || tokenReserve === 0n) {
+      //   throw new Error(`No liquidity for pair ${pairAddress}`);
+      // }
       const amountIn = ethers.parseEther(amountETH);
       // بررسی موجودی کیف پول
-
       const balance = await provider.getBalance(wallet.address);
 
       const feeData = await provider.getFeeData();
 
       const gasPrice = feeData.gasPrice || BigInt(20e9); // پیش‌فرض 20 Gwei
-
       const gasLimit = BigInt(300000);
-
       const gasCost = gasPrice * gasLimit;
-
       const totalCost = amountIn + gasCost;
-
       if (balance < totalCost) {
-
         throw new Error(
-
           `Insufficient funds: balance=${ethers.formatEther(balance)} ETH, required=${ethers.formatEther(totalCost)} ETH`,
         );
-
       }
-
       // تنظیم deadline
-
       const block = await provider.getBlock('latest');
       const blockTimestamp = block.timestamp;
       const deadline = blockTimestamp + 60 * 30; // 30 دقیقه
       let amounts;
       try {
         amounts = await routerContract.getAmountsOut(amountIn, path);
-
       } catch (error) {
-
         throw new Error(`Failed to get amounts out for ${token.address}: ${error.message}`);
-
       }
       if (amounts[1] === 0n) {
         throw new Error(`No output amount for token ${token.address}`);
       }
-
       const amountOutMin = (amounts[1] * BigInt(95)) / BigInt(100);
       const tx = await routerContract.swapExactETHForTokensSupportingFeeOnTransferTokens(
         amountOutMin,
@@ -307,10 +281,8 @@ export class UniswapService {
         deadline,
         { value: amountIn, gasLimit, gasPrice },
       );
-      const x = await routerContract.excludeFromFee.staticCall(pairAddress,true);
       this.logger.log(`Transaction sent: ${tx.hash}`);
       const receipt = await tx.wait();
-
       return {
         success: true,
         transactionHash: receipt.hash,
