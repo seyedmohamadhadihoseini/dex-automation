@@ -24,6 +24,7 @@ export class UniswapService {
   // Uniswap V2 Router ABI (minimal)
   private readonly routerABI = [
     'function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline) external payable returns (uint[] memory amounts)',
+    'function swapExactETHForTokensSupportingFeeOnTransferTokens(uint amountOutMin, address[] calldata path,  address to,  uint deadline) external payable',
     'function swapExactTokensForETH(uint amountIn, uint amountOutMin, address[] calldata path, address to, uint deadline) external returns (uint[] memory amounts)',
     'function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts)',
     'function getAmountsIn(uint amountOut, address[] calldata path) external view returns (uint[] memory amounts)',
@@ -299,7 +300,7 @@ export class UniswapService {
       }
 
       const amountOutMin = (amounts[1] * BigInt(95)) / BigInt(100);
-      const tx = await routerContract.swapExactETHForTokens(
+      const tx = await routerContract.swapExactETHForTokensSupportingFeeOnTransferTokens(
         amountOutMin,
         path,
         wallet.address,
@@ -477,7 +478,7 @@ export class UniswapService {
 
       const sellResult = await this.sellToken(token.address, tokenBalance);
       if (!sellResult.success) {
-        return { canSell: false, buyCommission: 100, sellCommission: 100, error: "" };
+        return { canSell: false, buyCommission: 100, sellCommission: 100, error: "buy done successfully but it can't be sold" };
       }
       count++;
       // Calculate commissions based on gas used (simplified)
