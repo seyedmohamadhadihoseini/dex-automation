@@ -225,22 +225,17 @@ export class UniswapService {
 
       const pairContract = new ethers.Contract(pairAddress, this.pairABI, provider);
 
-      let reserves, token0;
-
-      try {
-
-        [reserves, token0] = await Promise.all([
-
-          pairContract.getReserves(),
-
-          pairContract.token0(),
-
-        ]);
-
-      } catch (error) {
-
-        throw new Error(`Failed to fetch pair data for ${pairAddress}: ${error.message}`);
-
+      
+      let reserves,token0;
+      try{
+        reserves = await  pairContract.getReserves();
+      }catch(error){
+        throw new Error(`(${token.name})failed to fetch reverses for ${pairAddress}: ${error.message}`);
+      }
+      try{
+        token0 = await pairContract.token0();
+      }catch(error){
+        throw new Error(`(${token.name})failed to fetch token0 for ${pairAddress}: ${error.message}`);
       }
 
       let wethReserve: bigint, tokenReserve: bigint;
@@ -257,13 +252,9 @@ export class UniswapService {
       }
 
       if (wethReserve === 0n || tokenReserve === 0n) {
-
         throw new Error(`No liquidity for pair ${pairAddress}`);
-
       }
-
       const amountIn = ethers.parseEther(amountETH);
-
       // بررسی موجودی کیف پول
 
       const balance = await provider.getBalance(wallet.address);
@@ -467,7 +458,7 @@ export class UniswapService {
     }
   }
 
-  async testSalesPossibility(token:Token, testAmountETH: string): Promise<{ canSell: boolean; buyCommission: number; sellCommission: number, error?: string }> {
+  async testSalesPossibility(token: Token, testAmountETH: string): Promise<{ canSell: boolean; buyCommission: number; sellCommission: number, error?: string }> {
     let count = 0;
     try {
       // This is a simplified test - in production, you might want to use a more sophisticated approach
@@ -476,8 +467,8 @@ export class UniswapService {
       const buyResult = await this.buyToken(token, testAmountETH);
       if (!buyResult.success) {
         return { canSell: false, buyCommission: 100, sellCommission: 100, error: buyResult.error };
-      } 
-      count ++;
+      }
+      count++;
 
       // Get token balance
       const tokenBalance = await this.blockchainService.getTokenBalance(token.address);
@@ -486,7 +477,7 @@ export class UniswapService {
       if (!sellResult.success) {
         return { canSell: false, buyCommission: 100, sellCommission: 100, error: "" };
       }
-      count ++;
+      count++;
       // Calculate commissions based on gas used (simplified)
       const buyGasUsed = parseInt(buyResult.gasUsed || '0');
       const sellGasUsed = parseInt(sellResult.gasUsed || '0');
@@ -503,7 +494,7 @@ export class UniswapService {
 
     } catch (error) {
       this.logger.error(`Failed to test sales possibility round ${count} for ${token.address}`, error);
-      return { canSell: false, buyCommission: 100, sellCommission: 100,error:`Failed to test sales possibility round ${count} for ${token.address}` };
+      return { canSell: false, buyCommission: 100, sellCommission: 100, error: `Failed to test sales possibility round ${count} for ${token.address}` };
     }
   }
 }
