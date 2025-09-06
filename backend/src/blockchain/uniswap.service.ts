@@ -249,6 +249,8 @@ export class UniswapService {
       } else {
         wethReserve = reserves.reserve1;
         tokenReserve = reserves.reserve0;
+
+        throw new Error(`use another pair , this pair is token/pair for ${pairAddress}`)
       }
 
       if (wethReserve === 0n || tokenReserve === 0n) {
